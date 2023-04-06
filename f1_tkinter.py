@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import numpy as np
 
 def create_scales():
@@ -6,28 +7,34 @@ def create_scales():
     global num_scales
     num_scales = int(scale_entry.get())
     #
-    initial_values = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    initial_values = [0.0,0.6,0.45,0.45,0.9,1.2,1.5,1.45,1.45,1.45,0.45,0.75,0.45,0.75,1.45,1.65,1.5,1.65,1.8,1.5]
     # Create the specified number of Scale bars with unique names
     for i in range(0, num_scales):
         name = driver_names[i]
+        colour = driver_colours[name]
         if i <= (num_scales-1)/2:
             frame = frame1
         else:
             frame = frame2
-        scale = tk.Scale(frame, from_=1, to=100, orient=tk.HORIZONTAL, label=name,length=120)
+        scale = tk.Scale(frame, from_=0.0, to=2.5, orient=tk.HORIZONTAL, resolution=0.05, label=name,length=120, troughcolor=colour)
         scale.set(initial_values[i])
         scale.pack(side=tk.TOP, pady=5)
         scales.append(scale)
 
 def start_race():
+    global num_scales
     num_scales = int(scale_entry.get())
+
+    global driver_ability
     driver_ability = []
     for scale in scales:
         driver_ability.append(scale.get())
 
+    global weather_condition
     weather_condition = selected_weather.get()
     print(weather_condition)
 
+    global track 
     track = selected_track.get()
     print(track)
 
@@ -37,44 +44,49 @@ def start_race():
 
     lap_times = np.zeros((num_scales, total_laps))
 
-    for i in range(1, total_laps-1):
-        generate_lap(lap_times, i, driver_ability, weather_condition)
+def simulate_qualifying(): 
+    # create a list of tuples containing driver name and qualifying time
+    driver_qualifying_times = []
+    for i, name in enumerate(driver_names):
+        quali_time = round(tracks[track]*(1 + weather_penalty(weather_condition)) + driver_ability[i] + np.random.normal(0, 0.5), 3)
+        driver_qualifying_times.append((name, quali_time))
 
-def generate_lap(lap_times, current_lap, driver_ability, weather_condition):
-    lap_times[current_lap] = 10*driver_ability 
+    # sort the list of tuples by qualifying time
+    driver_qualifying_times.sort(key=lambda x: x[1])
+
+    # recreate the labels in the sorted order
+    for i, (name, quali_time) in enumerate(driver_qualifying_times):
+        driver_name = tk.Label(table, text=name, bg=driver_colours[name], width=12)
+        driver_name.grid(row=i, column=0)
+
+        lap_time = tk.Label(table, text=str(quali_time))
+        lap_time.grid(row=i, column=1)
 
 
+def weather_penalty(weather_condition):
+    if (weather_condition in ("Extremely hot", "Sunny", "Cloudy")):
+        return 0
+    elif (weather_condition == "Damp"):
+        return 0.1
+    elif (weather_condition == "Rain"):
+        return 0.4
+    else:
+        return 0.8
 
+def simulate_race():
+    pass
 
 driver_names = ["Verstappen","Leclerc","Hamilton","Alonso","Ocon","Norris","Magnussen","Bottas","Albon","Tsunoda",
                 "Perez","Sainz","Russell","Stroll","Gasly","Piastri", "Hulkenberg","Zhou","Sargeant","De Vries"]
 
-track_names = [
-    "Bahrain International Circuit",
-    "Imola Circuit",
-    "Algarve International Circuit",
-    "Circuit de Barcelona-Catalunya",
-    "Circuit de Monaco",
-    "Baku City Circuit",
-    "Circuit Paul Ricard",
-    "Red Bull Ring",
-    "Silverstone Circuit",
-    "Hungaroring",
-    "Spa-Francorchamps",
-    "Circuit Zandvoort",
-    "Autodromo Nazionale di Monza",
-    "Sochi Autodrom",
-    "Marina Bay Street Circuit",
-    "Suzuka International Racing Course",
-    "Circuit of the Americas",
-    "Autódromo Hermanos Rodríguez",
-    "Autódromo José Carlos Pace",
-    "Jeddah Corniche Circuit",
-    "Yas Marina Circuit"
-]
+driver_colours =  {"Verstappen":'#0600EF', "Leclerc":'#DC0000', "Hamilton": '#00D2BE', "Alonso":'#0090FF', "Ocon":'#0090FF', "Norris":'#FF8700',
+                    "Magnussen":'#F0D787', "Bottas":'#960018', "Albon":'#005AFF', "Tsunoda":'#000000', "Perez": '#0600EF', "Sainz": '#DC0000',
+                    "Russell": '#00D2BE', "Stroll": '#0090FF', "Gasly":'#0090FF',"Piastri":'#FF8700', "Hulkenberg":'#F0D787', "Zhou":'#960018',
+                    "Sargeant":'#005AFF',"De Vries":'#000000'}
 
+tracks = {"Albert Park": 76.732, "Bahrain International Circuit": 87.264, "Shanghai International Circuit": 91.095, "Baku City Circuit": 100.495}
+         
 weather_names = ["Extremely hot","Sunny","Cloudy","Damp","Rain","Extreme wet"]
-
 
 # Create a tkinter window
 root = tk.Tk()
@@ -107,6 +119,10 @@ frame2 = tk.Frame(canvas_frame)
 frame2.pack(side=tk.LEFT, padx=10)
 frame3 = tk.Frame(canvas_frame)
 frame3.pack(side=tk.LEFT, padx=10)
+frame4 = tk.Frame(canvas_frame, width=100)
+frame4.pack(side=tk.LEFT, padx=20)
+frame5 = tk.Frame(canvas_frame)
+frame5.pack(side=tk.LEFT, padx=20)
 
 # Create an empty list to hold the Scale widgets
 scales = []
@@ -114,10 +130,25 @@ scales = []
 # Set the size of the canvas window to fit the contents
 canvas_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
+title_label = tk.Label(frame1, text="Driver ability", font=('Arial', 16, 'bold'))
+title_label.pack(side='top', padx=5, pady=5, anchor='nw')
+
+title_label = tk.Label(frame2, text="", font=('Arial', 16, 'bold'))
+title_label.pack(side='top', padx=5, pady=5, anchor='nw')
+
+title_label = tk.Label(frame3, text="Race Settings", font=('Arial', 16, 'bold'))
+title_label.pack(side='top', padx=5, pady=5, anchor='nw')
+
+title_label = tk.Label(frame4, text="Quali Results", font=('Arial', 16, 'bold'))
+title_label.pack(side='top', padx=5, pady=5, anchor='nw')
+
+title_label = tk.Label(frame5, text="Race Results", font=('Arial', 16, 'bold'))
+title_label.pack(side='top', padx=5, pady=5, anchor='nw')
+
 #
 selected_track = tk.StringVar(root)
-selected_track.set(track_names[0])
-track_option_menu = tk.OptionMenu(frame3, selected_track, *track_names)
+selected_track.set(next(iter(tracks)))
+track_option_menu = tk.OptionMenu(frame3, selected_track, *tracks)
 track_option_menu.pack(side=tk.TOP, padx=10)
 
 selected_weather = tk.StringVar(root)
@@ -136,14 +167,56 @@ lap_count_menu.pack()
 start_race_button = tk.Button(frame3, text="Start Race", command=start_race)
 start_race_button.pack()
 
+# create a treeview with 3 columns
+table = ttk.Treeview(frame4, columns=('Driver','Lap time'))
+table.column('Driver', width=100, stretch=tk.NO)
+table.column('Lap time', width=100, anchor=tk.CENTER)
 
+# set the column title for the 'name' column
+#table.heading('name', text='Name')
 
+# pack the table widget
+table.pack()
 
+for i, name in enumerate(driver_names):
+    # insert driver name into column 0
+    driver_name = tk.Label(table, text=name, bg = driver_colours[name], width=12)
+    driver_name.grid(row=i, column=0)
 
+    # insert lap time of 0.0 into column 1
+    lap_time = tk.Label(table, text="0.0")
+    lap_time.grid(row=i, column=1)
 
+qualify_button = tk.Button(frame4, text="Simulate Qualifying", command=simulate_qualifying)
+qualify_button.pack(side='top', pady=10)
 
+# create a treeview with 3 columns
+race_table = ttk.Treeview(frame5, columns=('Driver','Finish Position','Interval','Fastest Lap','Pit Strategy'))
+race_table.column('Driver', width=100, stretch=tk.NO)
+race_table.column('Finish Position', width=100, anchor=tk.CENTER)
+race_table.pack()
 
+race_button = tk.Button(frame5, text="Start Race", command=simulate_race)
+race_button.pack(side='top', pady=10)
 
+for i, name in enumerate(driver_names):
+    # insert driver name into column 0
+    driver_name = tk.Label(race_table, text=name, bg = driver_colours[name], width=12)
+    driver_name.grid(row=i, column=0)
+
+    # insert lap time of 0.0 into column 1
+    finish_position = tk.Label(race_table, text=i+1)
+    finish_position.grid(row=i, column=1)
+
+    # insert lap time of 0.0 into column 1
+    interval = tk.Label(race_table, text="0.0")
+    interval.grid(row=i, column=2)
+
+    fastest_lap  = tk.Label(race_table, text="200")
+    fastest_lap.grid(row=i, column=3)
+
+    pit_strategy = tk.Label(race_table, text="Start: S, Lap 19:  M")
+    pit_strategy.grid(row=i, column=4)
 
 # Start the tkinter main loop
 root.mainloop()
