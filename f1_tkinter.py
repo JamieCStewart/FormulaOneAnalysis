@@ -6,6 +6,7 @@ def create_scales():
     # Get the number of Scale bars from the user input
     global num_scales
     num_scales = int(scale_entry.get())
+    #num_scales = 20 
     #
     initial_values = [0.0,0.6,0.45,0.45,0.9,1.2,1.5,1.45,1.45,1.45,0.45,0.75,0.45,0.75,1.45,1.65,1.5,1.65,1.8,1.5]
     # Create the specified number of Scale bars with unique names
@@ -74,6 +75,26 @@ def weather_penalty(weather_condition):
         return 0.8
 
 def simulate_race():
+    driver_lap_times = []
+    for i, name in enumerate(driver_names):
+        lap_times = round(tracks[track]*(1 + weather_penalty(weather_condition)) + driver_ability[i] + np.random.normal(0, 0.5), 3)
+        #driver_lap_times.append((name,lap_times))
+        driver_lap_times.append((name,cumulative_lap_times[name]))
+        cumulative_lap_times[name] = cumulative_lap_times[name] + lap_times
+
+    # sort the list of tuples by qualifying time
+    driver_lap_times.sort(key=lambda x: x[1])
+
+    # recreate the labels in the sorted order
+    for i, (name, lap_times) in enumerate(driver_lap_times):
+        driver_name = tk.Label(race_table, text=name, bg=driver_colours[name], width=12)
+        driver_name.grid(row=i, column=0)
+
+        race_time = tk.Label(race_table, text=str(cumulative_lap_times[name]))
+        race_time.grid(row=i, column=2)
+
+        fastest_lap = tk.Label(race_table, text=str(lap_times))
+        fastest_lap.grid(row=i, column=3)
     pass
 
 driver_names = ["Verstappen","Leclerc","Hamilton","Alonso","Ocon","Norris","Magnussen","Bottas","Albon","Tsunoda",
@@ -87,6 +108,12 @@ driver_colours =  {"Verstappen":'#0600EF', "Leclerc":'#DC0000', "Hamilton": '#00
 tracks = {"Albert Park": 76.732, "Bahrain International Circuit": 87.264, "Shanghai International Circuit": 91.095, "Baku City Circuit": 100.495}
          
 weather_names = ["Extremely hot","Sunny","Cloudy","Damp","Rain","Extreme wet"]
+
+global cumulative_lap_times
+cumulative_lap_times = {"Verstappen":0.0, "Leclerc":0.0, "Hamilton": 0.0, "Alonso":0.0, "Ocon":0.0, "Norris":0.0,
+                    "Magnussen":0.0, "Bottas":0.0, "Albon":0.0, "Tsunoda":0.0, "Perez": 0.0, "Sainz": 0.0,
+                    "Russell": 0.0, "Stroll": 0.0, "Gasly":0.0,"Piastri":0.0, "Hulkenberg":0.0, "Zhou":0.0,
+                    "Sargeant":0.0,"De Vries":0.0}
 
 # Create a tkinter window
 root = tk.Tk()
@@ -111,6 +138,7 @@ scale_entry.pack()
 # Create a button to create the Scale bars based on the user input
 create_button = tk.Button(canvas_frame, text="Create Scales", command=create_scales)
 create_button.pack()
+
 
 # Create two frames to hold the Scale bars
 frame1 = tk.Frame(canvas_frame)
@@ -194,6 +222,9 @@ qualify_button.pack(side='top', pady=10)
 race_table = ttk.Treeview(frame5, columns=('Driver','Finish Position','Interval','Fastest Lap','Pit Strategy'))
 race_table.column('Driver', width=100, stretch=tk.NO)
 race_table.column('Finish Position', width=100, anchor=tk.CENTER)
+race_table.column('Interval', width=100, anchor=tk.CENTER)
+race_table.column('Fastest Lap', width=100, anchor=tk.CENTER)
+race_table.column('Pit Strategy', width=100, anchor=tk.CENTER)
 race_table.pack()
 
 race_button = tk.Button(frame5, text="Start Race", command=simulate_race)
@@ -209,8 +240,8 @@ for i, name in enumerate(driver_names):
     finish_position.grid(row=i, column=1)
 
     # insert lap time of 0.0 into column 1
-    interval = tk.Label(race_table, text="0.0")
-    interval.grid(row=i, column=2)
+    race_time = tk.Label(race_table, text="0.0")
+    race_time.grid(row=i, column=2)
 
     fastest_lap  = tk.Label(race_table, text="200")
     fastest_lap.grid(row=i, column=3)
