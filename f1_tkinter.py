@@ -35,7 +35,15 @@ def start_race():
     total_laps = int(selected_lap_count.get())
     print(total_laps)
 
-    lap_times = np.zeros(num_scales, total_laps)
+    lap_times = np.zeros((num_scales, total_laps))
+
+    for i in range(1, total_laps-1):
+        generate_lap(lap_times, i, driver_ability, weather_condition)
+
+def generate_lap(lap_times, current_lap, driver_ability, weather_condition):
+    lap_times[current_lap] = 10*driver_ability 
+
+
 
 
 driver_names = ["Verstappen","Leclerc","Hamilton","Alonso","Ocon","Norris","Magnussen","Bottas","Albon","Tsunoda",
@@ -127,12 +135,6 @@ lap_count_menu.pack()
 
 start_race_button = tk.Button(frame3, text="Start Race", command=start_race)
 start_race_button.pack()
-
-
-# We can now ignore tkinter for a bit
-
-# Run the race simulation 
-
 
 
 
